@@ -13,16 +13,17 @@
 #include <dt-bindings/gpio/gpio.h>
 
 / {
-	model = "Atmel SAMA5D27 SOM1 EK";
-	compatible = "atmel,sama5d27-som1-matter", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5";
+	model = "Atmel SAMA5D27 SOM1 EK MATTER;
+	compatible = "atmel,sama5d27-som1-matter", "atmel,sama5d27-som1-ek", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5";
 
 	aliases {
 		serial0 = &uart1;	/* DBGU */
 		serial1 = &uart4;	/* mikro BUS 1 */
 		serial2 = &uart2;	/* mikro BUS 2 */
+		serial3 = &uart8;	/* mikro BUS 1 TWD TWCK converted to FLEX1 UART */
 		i2c0	= &i2c0;
 		i2c1	= &i2c1;
-		i2c2	= &i2c2;
+		#i2c2	= &i2c2;
 	};
 
 	chosen {
@@ -148,7 +149,7 @@
 			};
 
 			flx1: flexcom@f8038000 {
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_TWI>;
+				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>; /* Used to be ATMEL_FLEXCOM_MODE_TWI */
 				status = "okay";
 
 				i2c2: i2c@600 {
@@ -163,6 +164,18 @@
 					pinctrl-names = "default";
 					pinctrl-0 = <&pinctrl_mikrobus_i2c>;
 					atmel,fifo-size = <16>;
+					status = "disabled";
+				};
+
+				uart8: serial@200 {
+					compatible = "atmel,at91sam9260-usart";
+					reg = <0x200 0x200>;
+					interrupts = <20 IRQ_TYPE_LEVEL_HIGH 7>;
+					clocks = <&flx1_clk>;
+					clock-names = "usart";
+					pinctrl-names = "default";
+					pinctrl-0 = <&pinctrl_mikrobus1_flx_uart>;
+					atmel,fifo-size = <32>;
 					status = "okay";
 				};
 			};
@@ -502,6 +515,12 @@
 					bias-disable;
 				};
 
+				pinctrl_mikrobus1_flx_uart: microbus1_uart1 {
+					pinmux = <PIN_PA24__FLEXCOM1_IO1>, 
+						 <PIN_PA23__FLEXCOM1_IO0>;
+					bias-disable; 
+				};
+	
 				pinctrl_flx4_default: flx4_uart_default {
 					pinmux = <PIN_PC28__FLEXCOM4_IO0>,
 						 <PIN_PC29__FLEXCOM4_IO1>,
