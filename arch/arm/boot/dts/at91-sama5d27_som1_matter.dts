@@ -210,32 +210,19 @@
 				status = "okay";
 			};
 
-			flx3: flexcom@fc014000 {
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_SPI>;
-				status = "disabled";
+			spi2: spi@fc014000 {
+				status = "okay";
 
-				uart7: serial@200 {
-					compatible = "atmel,at91sam9260-usart";
-					reg = <0x200 0x200>;
-					interrupts = <22 IRQ_TYPE_LEVEL_HIGH 7>;
-					clocks = <&flx3_clk>;
-					clock-names = "usart";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_flx3_default>;
-					atmel,fifo-size = <32>;
-					status = "disabled"; /* Conflict with isc. */
-				};
-
-				spi2: spi@400 {
-					compatible = "atmel,at91rm9200-spi";
-					reg = <0x400 0x200>;
-					interrupts = <22 IRQ_TYPE_LEVEL_HIGH 7>;
-					clocks = <&flx3_clk>;
-					clock-names = "spi_clk";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_flx3_default>;
+				wilc_spi@0 {
+					compatible = "microchip,wilc1000", "microchip,wilc3000";
+					spi-max-frequency = <48000000>;
+					reg = <0>;
+					irq-gpios = <&pinctrl_wilc_irq>;
+					reset-gpios = <&pinctrl_wilc_rst>;
+					chip_en-gpios = <&pinctrl_wilc_en>;
 					atmel,fifo-size = <16>;
-					status = "disabled"; /* Conflict with isc. */
+					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus1_spi_cs>;
+					status = "okay";
 				};
 			};
 
@@ -262,7 +249,7 @@
 					clocks = <&flx4_clk>;
 					clock-names = "spi_clk";
 					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus1_spi_cs &pinctrl_mikrobus2_spi_cs>;
+					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus2_spi_cs>;
 					atmel,fifo-size = <16>;
 					status = "okay"; /* Conflict with uart6 and i2c3. */
 				};
@@ -492,10 +479,22 @@
 					bias-disable;
 				};
 
-				pinctrl_mikrobus2_int: mikrobus2_int {
-					pinmux = <PIN_PA25__GPIO>;
+				pinctrl_wilc_irq: wilc_irq {
+					pinmux = <PIN_PD23__GPIO>;
 					bias-disable;
 				};
+
+
+				pinctrl_wilc_rst: wilc_rst {
+					pinmux = <PIN_PD24__GPIO>;
+					bias-disable;
+				};
+
+				pinctrl_wilc_en: wilc_en {
+					pinmux = <PIN_PD25__GPIO>;
+					bias-disable;
+				};
+
 
 				pinctrl_mikrobus1_uart: mikrobus1_uart {
 					pinmux = <PIN_PB3__URXD4>,
