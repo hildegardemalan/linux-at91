@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * at91-sama5d27_som1_ek.dts - Device Tree file for SAMA5D27-SOM1-EK board
+ * at91-sama5d27_som1_matter.dts - Device Tree file for SAMA5D27-SOM1-MATTER board
  *
  *  Copyright (c) 2017, Microchip Technology Inc.
  *                2016 Nicolas Ferre <nicolas.ferre@atmel.com>
@@ -13,16 +13,17 @@
 #include <dt-bindings/gpio/gpio.h>
 
 / {
-	model = "Atmel SAMA5D27 SOM1 EK";
-	compatible = "atmel,sama5d27-som1-ek", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5";
+	model = "Atmel SAMA5D27 SOM1 EK MATTER;
+	compatible = "atmel,sama5d27-som1-matter", "atmel,sama5d27-som1-ek", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5";
 
 	aliases {
 		serial0 = &uart1;	/* DBGU */
 		serial1 = &uart4;	/* mikro BUS 1 */
 		serial2 = &uart2;	/* mikro BUS 2 */
+		serial3 = &uart8;	/* mikro BUS 1 TWD TWCK converted to FLEX1 UART */
 		i2c0	= &i2c0;
 		i2c1	= &i2c1;
-		i2c2	= &i2c2;
+		#i2c2	= &i2c2;
 	};
 
 	chosen {
@@ -89,7 +90,7 @@
 			isc: isc@f0008000 {
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_isc_base &pinctrl_isc_data_8bit &pinctrl_isc_data_9_10 &pinctrl_isc_data_11_12>;
-				status = "disabled";
+				status = "okay";
 			};
 
 			qspi1: spi@f0024000 {
@@ -148,7 +149,7 @@
 			};
 
 			flx1: flexcom@f8038000 {
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_TWI>;
+				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>; /* Used to be ATMEL_FLEXCOM_MODE_TWI */
 				status = "okay";
 
 				i2c2: i2c@600 {
@@ -163,6 +164,18 @@
 					pinctrl-names = "default";
 					pinctrl-0 = <&pinctrl_mikrobus_i2c>;
 					atmel,fifo-size = <16>;
+					status = "disabled";
+				};
+
+				uart8: serial@200 {
+					compatible = "atmel,at91sam9260-usart";
+					reg = <0x200 0x200>;
+					interrupts = <20 IRQ_TYPE_LEVEL_HIGH 7>;
+					clocks = <&flx1_clk>;
+					clock-names = "usart";
+					pinctrl-names = "default";
+					pinctrl-0 = <&pinctrl_mikrobus1_flx_uart>;
+					atmel,fifo-size = <32>;
 					status = "okay";
 				};
 			};
@@ -197,40 +210,19 @@
 				status = "okay";
 			};
 
-			flx3: flexcom@fc014000 {
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_SPI>;
-				status = "disabled";
+			spi2: spi@fc014000 {
+				status = "okay";
 
-				uart7: serial@200 {
-					compatible = "atmel,at91sam9260-usart";
-					reg = <0x200 0x200>;
-					interrupts = <22 IRQ_TYPE_LEVEL_HIGH 7>;
-					clocks = <&flx3_clk>;
-					clock-names = "usart";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_flx3_default>;
-					atmel,fifo-size = <32>;
-					status = "disabled"; /* Conflict with isc. */
-				};
-
-
-				spi2: spi@400 {
-					status = "okay"; /* Conflict with isc. */
-					/*cs-gpios = <&pioB 21 0>;*/
-
-					wilc_spi@0 {
-						compatible = "microchip,wilc3000","microchip,wilc1000" ;
-						spi-max-frequency = <48000000>;	
-						reg = <0x400 0x200>;											
-						irq-gpios = <&pioD 23 0>;
-						reset-gpios = <&pioD 24 0>;
-						chip_en-gpios = <&pioA 25 0>;
-						clocks = <&flx3_clk>;
-						clock-names = "spi_clk";
-						pinctrl-names = "default";
-						pinctrl-0 = <&pinctrl_flx3_default>;
-						status = "okay";
-					}
+				wilc_spi@0 {
+					compatible = "microchip,wilc1000", "microchip,wilc3000";
+					spi-max-frequency = <48000000>;
+					reg = <0>;
+					irq-gpios = <&pinctrl_wilc_irq>;
+					reset-gpios = <&pinctrl_wilc_rst>;
+					chip_en-gpios = <&pinctrl_wilc_en>;
+					atmel,fifo-size = <16>;
+					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus1_spi_cs>;
+					status = "okay";
 				};
 			};
 
@@ -257,7 +249,7 @@
 					clocks = <&flx4_clk>;
 					clock-names = "spi_clk";
 					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus1_spi_cs &pinctrl_mikrobus2_spi_cs>;
+					pinctrl-0 = <&pinctrl_mikrobus_spi &pinctrl_mikrobus2_spi_cs>;
 					atmel,fifo-size = <16>;
 					status = "okay"; /* Conflict with uart6 and i2c3. */
 				};
@@ -487,10 +479,22 @@
 					bias-disable;
 				};
 
-				pinctrl_mikrobus2_int: mikrobus2_int {
-					pinmux = <PIN_PA25__GPIO>;
+				pinctrl_wilc_irq: wilc_irq {
+					pinmux = <PIN_PD23__GPIO>;
 					bias-disable;
 				};
+
+
+				pinctrl_wilc_rst: wilc_rst {
+					pinmux = <PIN_PD24__GPIO>;
+					bias-disable;
+				};
+
+				pinctrl_wilc_en: wilc_en {
+					pinmux = <PIN_PD25__GPIO>;
+					bias-disable;
+				};
+
 
 				pinctrl_mikrobus1_uart: mikrobus1_uart {
 					pinmux = <PIN_PB3__URXD4>,
@@ -510,6 +514,12 @@
 					bias-disable;
 				};
 
+				pinctrl_mikrobus1_flx_uart: microbus1_uart1 {
+					pinmux = <PIN_PA24__FLEXCOM1_IO1>, 
+						 <PIN_PA23__FLEXCOM1_IO0>;
+					bias-disable; 
+				};
+	
 				pinctrl_flx4_default: flx4_uart_default {
 					pinmux = <PIN_PC28__FLEXCOM4_IO0>,
 						 <PIN_PC29__FLEXCOM4_IO1>,
