@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
- * at91-sama5d27_som1_matter.dts - Device Tree file for SAMA5D27-SOM1-MATTER board
+ * at91-sama5d27_som1_ek.dts - Device Tree file for SAMA5D27-SOM1-EK board
  *
- *
- *
- *
- *
+ *  Copyright (c) 2017, Microchip Technology Inc.
+ *                2016 Nicolas Ferre <nicolas.ferre@atmel.com>
+ *                2017 Cristian Birsan <cristian.birsan@microchip.com>
+ *                2017 Claudiu Beznea <claudiu.beznea@microchip.com>
  */
 /dts-v1/;
 #include "at91-sama5d27_som1.dtsi"
@@ -14,52 +14,41 @@
 
 / {
 	model = "Atmel SAMA5D27 SOM1 MATTER";
-	compatible = "atmel,sama5d27-som1-ek", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5", "atmel,sama5d27-som1-matter";
+	compatible = "atmel,sama5d27-som1-matter", "atmel,sama5d27-som1", "atmel,sama5d27", "atmel,sama5d2", "atmel,sama5";
 
-	aliases 
-	{
-		sd0		= &sdmmc0;		/* root fs */
-		USBDebug	= &usb0;    		/* Debug USB micro */ 
-		flx0_i2c_mppt	= &flx0_i2c;		/* MPPT I2C */
-		flx2_uart_ble 	= &flx2_uart0; 		/* UART BLE */
-		spi_wifi_disp	= &spi0;    		/* Wifi and Disp SPI */
-		flx1_uart_rs485 = &flx1_uart1;   	/* UART RS485 */
-		flx4_uart_rs232 = &flx4_uart2;   	/* UART RS232 */
-		uart4_mdot	= &uart4;		/* UART MDOT */
-		uart2_xdot	= &uart2;		/* UART XDOT */
-		uart3_gps	= &uart3;		/* UART GPS */
-		uart1_gps	= &uart1;		/* UART GSM */
-		flx3_i2c_env	= &flx3_i2c0;       	/* I2C ENVIRONMENTALS */
-		i2c_adc		= &i2c1;		/* I2C ADC */
-		
+	aliases {
+		serial0 = &uart1;	/* gsm/dbug */
+		serial1 = &uart2;	/* xdot */
+		serial2 = &uart3;	/* gps */
+		serial3 = &uart4;	/* mdot */
+		serial4 = &uart5;	/* rs485 */
+		serial5 = &uart6;	/* ble */
+		serial6 = &uart7;	/* rs252 */
+		i2c3	= &i2c3; 	/* env */
+		i2c1    = &i2c1; 	/* adc */
+		i2c2	= &i2c2;	/* MPPT */
 	};
 
-	chosen 
-	{
+	chosen {
 		stdout-path = "serial0:115200n8";
 	};
 
-	ahb 
-	{
-		//SD CARD
-		sdmmc0: sdio-host@a0000000 
-		{
-			bus-width = <4>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&pinctrl_sdmmc0_rootfs>;
-			status = "okay";
-		};
-		//USB DEBUGGING		
-		usb0: gadget@300000 
-		{
+	ahb {
+		usb0: gadget@300000 {
 			atmel,vbus-gpio = <&pioA PIN_PD20 GPIO_ACTIVE_HIGH>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&pinctrl_usba_vbus>;
 			status = "okay";
 		};
-		//USB TO HUB
-		usb1: ohci@400000 
-		{
+
+		usb1: ohci@400000 {
+			num-ports = <3>;
+			atmel,vbus-gpio = <0 /* &pioA PIN_PD20 GPIO_ACTIVE_HIGH */
+					   &pioA PIN_PA27 GPIO_ACTIVE_HIGH
+					   0
+					  >;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_usb_default>;
 			status = "okay";
 		};
 
@@ -67,80 +56,88 @@
 			status = "okay";
 		};
 
-		apb 
-		{
-		//POWER MANAGEMENT?
-			pmc: pmc@f0014000 
-			{
-				pmc_fast_restart 
-				{
+		sdmmc0: sdio-host@a0000000 {
+			bus-width = <8>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_sdmmc0_default>;
+			status = "okay";
+		};
+
+
+		apb {
+			pmc: pmc@f0014000 {
+				pmc_fast_restart {
 					compatible = "atmel,sama5d2-pmc-fast-startup";
 					#address-cells = <1>;
 					#size-cells = <0>;
 
 					atmel,wakeup-rtc-timer;
 
-					wkpin: input@0 
-					{
+					wkpin: input@0 {
 						reg = <0>;
 					};
 
-					gmac_wol: input@10 
-					{
+					gmac_wol: input@10 {
 						reg = <10>;
 						atmel,wakeup-active-high;
 					};
 				};
 			};
 
-			qspi1: spi@f0024000 
-			{
-				status = "okay";
+			isc: isc@f0008000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_isc_base &pinctrl_isc_data_8bit &pinctrl_isc_data_9_10 &pinctrl_isc_data_11_12>;
+				status = "disabled";
 			};
-			//ETHERNET
-			macb0: ethernet@f8008000 
-			{
+
+			qspi1: spi@f0024000 {
 				status = "okay";
 			};
 
-			tcb0: timer@f800c000 
-			{
-				timer0: timer@0 
-				{
+			spi0: spi@f8000000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_spi0_wifi_disp>;
+				status = "disabled";
+			};
+
+			macb0: ethernet@f8008000 {
+				status = "okay";
+			};
+
+			tcb0: timer@f800c000 {
+				timer0: timer@0 {
 					compatible = "atmel,tcb-timer";
 					reg = <0>;
 				};
 
-				timer1: timer@1 
-				{
+				timer1: timer@1 {
 					compatible = "atmel,tcb-timer";
 					reg = <1>;
 				};
 			};
-			//SHUTDOWN?	
-			shdwc@f8048010 
-			{
-				atmel,shdwc-debouncer = <976>;
-				atmel,wakeup-rtc-timer;
 
-				input@0 
-				{
-					reg = <0>;
-					atmel,wakeup-type = "low";
-				};
-			};
-			//INTERNAL WATCHDOG?
-			watchdog@f8048040 
-			{
+			uart1: serial@f8020000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_uart_gsm>;
+				atmel,use-dma-rx;
+				atmel,use-dma-tx;
 				status = "okay";
 			};
+
+			uart2: serial@f8024000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_uart_xdot>;
+				atmel,use-dma-rx;
+				atmel,use-dma-tx;
+				status = "okay";
+			};
+
 			//MPPT/POWER I2C FLEXCOM0
-			flx0: flexcom@f8034000
-			{
+			flx0: flexcom@f8034000 {
 				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_TWI>;
 				status = "okay";
 
-				flx0_i2c: i2c@600 
+				i2c2: i2c@600 
 				{
 					compatible = "atmel,sama5d2-i2c";
 					reg = <0x600 0x200>;
@@ -155,14 +152,60 @@
 					atmel,fifo-size = <16>;
 					status = "okay";
 				};
-			};	
-			//BLE UART FLEXCOM2			
-			flx2: flexcom@fc010000 
-			{ 
+			};
+
+			flx1: flexcom@f8038000 {
 				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
 				status = "okay";
 
-				flx2_uart0: serial@200 
+				uart5: serial@200 {
+					compatible = "atmel,at91sam9260-usart";
+					reg = <0x200 0x200>;
+					interrupts = <20 IRQ_TYPE_LEVEL_HIGH 7>;
+					clocks = <&flx1_clk>;
+					clock-names = "usart";
+					pinctrl-names = "default";
+					pinctrl-0 = <&pinctrl_flx1_uart_rs485>;
+					atmel,fifo-size = <32>;
+					status = "okay"; //Dedicated to RS485, No conflicts
+				};
+			};
+
+			shdwc@f8048010 {
+				atmel,shdwc-debouncer = <976>;
+				atmel,wakeup-rtc-timer;
+
+				input@0 {
+					reg = <0>;
+					atmel,wakeup-type = "low";
+				};
+			};
+
+			watchdog@f8048040 {
+				status = "okay";
+			};
+
+			uart3: serial@fc008000 {
+				atmel,use-dma-rx;
+				atmel,use-dma-tx;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_uart_gps>;
+				status = "okay"; /* Conflict with isc. */
+			};
+
+			uart4: serial@fc00c000 {
+				atmel,use-dma-rx;
+				atmel,use-dma-tx;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_uart_mdot>;
+				status = "okay";
+			};
+			//BLE UART FLEXCOM2			
+			flx2: flexcom@fc010000 { 
+				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
+				status = "okay";
+
+				uart6: serial@200 
 				{
 					compatible = "atmel,at91sam9260-usart";
 					reg = <0x200 0x200>;
@@ -175,101 +218,12 @@
 					status = "okay"; //Dedicated to BLE, No conflicts
 				};
 			};
-			//WIFI/DISPLAY SPI				
-			spi0: spi@f8000000 
-			{
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_spi0_wifi_disp>;
-				status = "disabled";
-			};  //GPIOs for control specified only in pin control section
-			//RS485 FLEXCOM1 UART
-			flx1: flexcom@f8038000 
-			{
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
-				status = "okay";
 
-				flx1_uart1: serial@200 
-				{
-					compatible = "atmel,at91sam9260-usart";
-					reg = <0x200 0x200>;
-					interrupts = <20 IRQ_TYPE_LEVEL_HIGH 7>;
-					clocks = <&flx1_clk>;
-					clock-names = "usart";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_flx1_uart_rs485>;
-					atmel,fifo-size = <32>;
-					status = "okay"; //Dedicated to RS485, No conflicts
-				};
-			};
-			//RS232 FLEXCOM4 UART			
-			flx4: flexcom@fc018000 
-			{
-				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
-				status = "okay";
-
-				flx4_uart2: serial@200 
-				{
-					compatible = "atmel,at91sam9260-usart";
-					reg = <0x200 0x200>;
-					interrupts = <23 IRQ_TYPE_LEVEL_HIGH 7>;
-					clocks = <&flx4_clk>;
-					clock-names = "usart";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_flx4_uart_rs232>;
-					atmel,fifo-size = <32>;
-					status = "okay"; //Dedicated to RS232, No Conflicts
-				};
-			};
-			//CAN BUS INDUSTRIAL COMMS			
-			can1: can@fc050000 
-			{ //Check this node, may need to move up one level!
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_can1_industrial>;
-				status = "okay";
-			};
-			//MDOT UART
-			uart4: serial@fc00c000 
-			{
-				atmel,use-dma-rx;
-				atmel,use-dma-tx;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_uart_mdot>;
-				status = "okay";
-			};
-			//XDOT UART
-			uart2: serial@f8024000 
-			{
-				atmel,use-dma-rx;
-				atmel,use-dma-tx;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_uart_xdot>;
-				status = "okay";
-			};
-			//GPS UART			
-			uart3: serial@fc008000 
-			{
-				atmel,use-dma-rx;
-				atmel,use-dma-tx;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_uart_gps>;
-				status = "okay";
-			};
-			//GSM UART			
-			uart1: serial@f8020000 
-			{
-				atmel,use-dma-rx;
-				atmel,use-dma-tx;
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_uart_gsm>;
-				status = "okay";
-			};
-			//ENVIRONMENTALS/BUS FLEXCOM3 I2C
-			flx3: flexcom@fc014000 
-			{
+			flx3: flexcom@fc014000 {
 				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_TWI>;
 				status = "okay";
-				
-				flx3_i2c0: i2c@600 
+
+				i2c3: i2c@600 
 				{
 					compatible = "atmel,sama5d2-i2c";
 					reg = <0x600 0x200>;
@@ -285,32 +239,40 @@
 					status = "okay";
 				};
 			};
-			//ADC I2C1
-			i2c1: i2c@fc028000 
-			{
+
+			//RS232 FLEXCOM4 UART			
+			flx4: flexcom@fc018000 {
+				atmel,flexcom-mode = <ATMEL_FLEXCOM_MODE_USART>;
+				status = "okay";
+
+				uart7: serial@200 
+				{
+					compatible = "atmel,at91sam9260-usart";
+					reg = <0x200 0x200>;
+					interrupts = <23 IRQ_TYPE_LEVEL_HIGH 7>;
+					clocks = <&flx4_clk>;
+					clock-names = "usart";
+					pinctrl-names = "default";
+					pinctrl-0 = <&pinctrl_flx4_uart_rs232>;
+					atmel,fifo-size = <32>;
+					status = "okay"; //Dedicated to RS232, No Conflicts
+				};
+			};
+
+			i2c1: i2c@fc028000 {
 				dmas = <0>, <0>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&pinctrl_adc_i2c1>;
 				status = "okay";
 			};
 
-
-			//BUS I2S
-			//RESEARCH
-			//BUS CAN0   
-			can0: can@f8054000
-			{ //Check this node, may need to move up one level!
-				pinctrl-names = "default";
-				pinctrl-0 = <&pinctrl_can0_bus>;
-				status = "disabled";
+			adc: adc@fc030000 {
+				vddana-supply = <&vddana>;
+				vref-supply = <&advref>;
+				status = "okay";
 			};
-		};
-/*___________________________________________Pin Control________________________________________________*/
 
-			pinctrl@fc038000 
-			{
-			//DEFAULTS UNCHANGED
-			//USB DETECT
+			pinctrl@fc038000 {
 				pinctrl_usba_vbus: usba_vbus 
 				{
 					pinmux = <PIN_PD20__GPIO>;
@@ -788,15 +750,145 @@
 					pinmux = <PIN_PC24__GPIO>;
 					bias-disable;
 				};
-				
-				
-/*				pinctrl_led_gpio_default: led_gpio_default 
-				{
-					pinmux = <PIN_PA10__GPIO>,
-						 <PIN_PB1__GPIO>,
-						 <PIN_PA31__GPIO>;
-					bias-pull-up;
-				};*/	
-			};			
+
+				pinctrl_isc_base: isc_base {
+					pinmux = <PIN_PC21__ISC_PCK>,
+						 <PIN_PC22__ISC_VSYNC>,
+						 <PIN_PC23__ISC_HSYNC>,
+						 <PIN_PC24__ISC_MCK>;
+					bias-disable;
+				};
+
+				pinctrl_isc_data_8bit: isc_data_8bit {
+					pinmux = <PIN_PC20__ISC_D11>,
+						 <PIN_PC19__ISC_D10>,
+						 <PIN_PC18__ISC_D9>,
+						 <PIN_PC17__ISC_D8>,
+						 <PIN_PC16__ISC_D7>,
+						 <PIN_PC15__ISC_D6>,
+						 <PIN_PC14__ISC_D5>,
+						 <PIN_PC13__ISC_D4>;
+					bias-disable;
+				};
+
+				pinctrl_isc_data_9_10: isc_data_9_10 {
+					pinmux = <PIN_PC12__ISC_D3>,
+						 <PIN_PC11__ISC_D2>;
+					bias-disable;
+				};
+
+				pinctrl_isc_data_11_12: isc_data_11_12 {
+					pinmux = <PIN_PC10__ISC_D1>,
+						 <PIN_PC9__ISC_D0>;
+					bias-disable;
+				};
+
+				pinctrl_sdmmc0_default: sdmmc0_default {
+					cmd_data {
+						pinmux = <PIN_PA1__SDMMC0_CMD>,
+							 <PIN_PA2__SDMMC0_DAT0>,
+							 <PIN_PA3__SDMMC0_DAT1>,
+							 <PIN_PA4__SDMMC0_DAT2>,
+							 <PIN_PA5__SDMMC0_DAT3>;
+						bias-disable;
+					};
+					ck_cd_wp {
+						pinmux = <PIN_PA0__SDMMC0_CK>,
+							 <PIN_PA12__SDMMC0_WP>, //Added
+							 <PIN_PA13__SDMMC0_CD>;
+						bias-disable;
+					};
+				};
+
+				pinctrl_usb_default: usb_default {
+					pinmux = <PIN_PA27__GPIO>,
+						 <PIN_PD19__GPIO>;
+					bias-disable;
+				};
+
+				pinctrl_usba_vbus: usba_vbus {
+					pinmux = <PIN_PD20__GPIO>;
+					bias-disable;
+				};
+			};
+
+			can1: can@fc050000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&pinctrl_can1_industrial>;
+				status = "okay";
+			};
 		};
+	};
+
+	/*gpio_keys {
+		compatible = "gpio-keys";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_key_gpio_default>;
+
+		pb4 {
+			label = "USER";
+			gpios = <&pioA PIN_PA29 GPIO_ACTIVE_LOW>;
+			linux,code = <0x104>;
+			wakeup-source;
+		};
+	};*/
+
+	/*leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_led_gpio_default>;
+		status = "okay"; 
+
+		red {
+			label = "red";
+			gpios = <&pioA PIN_PA10 GPIO_ACTIVE_HIGH>;
+		};
+
+		green {
+			label = "green";
+			gpios = <&pioA PIN_PB1 GPIO_ACTIVE_HIGH>;
+		};
+
+		blue {
+			label = "blue";
+			gpios = <&pioA PIN_PA31 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+		};
+	};*/
+
+	vddin_3v3: fixed-regulator-vddin_3v3 {
+		compatible = "regulator-fixed";
+
+		regulator-name = "VDDIN_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+		status = "okay";
+	};
+
+	vddana: fixed-regulator-vddana {
+		compatible = "regulator-fixed";
+
+		regulator-name = "VDDANA";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+		vin-supply = <&vddin_3v3>;
+		status = "okay";
+	};
+
+	advref: fixed-regulator-advref {
+		compatible = "regulator-fixed";
+
+		regulator-name = "advref";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+		vin-supply = <&vddana>;
+		status = "okay";
+	};
 };
